@@ -2071,9 +2071,9 @@ async function printDashboard() {
   window.scrollTo(0, 0);
 
   try {
-    // Capture only the visible viewport — exactly what user sees on screen
-    const vw = window.innerWidth;
-    const vh = document.documentElement.scrollHeight; // full page height but single layout
+    // Set capture width to match content max-width (1640px) — removes side margins
+    const contentW = 1640;
+    const contentH = document.documentElement.scrollHeight;
 
     const canvas = await html2canvas(document.body, {
       scale: 2,
@@ -2083,10 +2083,10 @@ async function printDashboard() {
       scrollY: 0,
       x: 0,
       y: 0,
-      width:  vw,
-      height: vh,
-      windowWidth:  vw,
-      windowHeight: vh,
+      width:        contentW,
+      height:       contentH,
+      windowWidth:  contentW,
+      windowHeight: contentH,
     });
 
     // A3 landscape: 420 × 297 mm
