@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   /* === Aubergine palette derived from #3C2051 === */
@@ -400,7 +402,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div id="status-bar">Default project loaded · EIT 2 Thai Oil CFP Project · 2,557 activities</div>
     <div class="divider-v"></div>
-    <button class="btn btn-pdf" onclick="printDashboard()" title="Export dashboard as PDF">
+    <button class="btn btn-pdf" id="btn-pdf" onclick="printDashboard()" title="Export dashboard as PDF">
       🖨️ &nbsp;Print / PDF
     </button>
   </div>
@@ -2056,8 +2058,50 @@ function showLoading(text) {
 function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('active');
 }
-function printDashboard() {
-  window.print();
+async function printDashboard() {
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+  setStatus('Capturing dashboard…', 'info');
+
+  try {
+    // Capture the full visible page
+    const canvas = await html2canvas(document.body, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth:  document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight,
+      ignoreElements: el => el.id === 'btn-pdf' || el.id === 'loading-overlay'
+    });
+
+    // A3 landscape: 420 × 297 mm
+    const { jsPDF } = window.jspdf;
+    const pdf   = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+    const pdfW  = pdf.internal.pageSize.getWidth();   // 420 mm
+    const pdfH  = pdf.internal.pageSize.getHeight();  // 297 mm
+
+    // Scale image to fit A3 keeping aspect ratio
+    const ratio  = Math.min(pdfW / canvas.width, pdfH / canvas.height);
+    const imgW   = canvas.width  * ratio;
+    const imgH   = canvas.height * ratio;
+    const offX   = (pdfW - imgW) / 2;
+    const offY   = (pdfH - imgH) / 2;
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.93);
+    pdf.addImage(imgData, 'JPEG', offX, offY, imgW, imgH);
+    pdf.save('Construction_Dashboard.pdf');
+
+    setStatus('✅ PDF saved!', 'success');
+  } catch(e) {
+    console.error(e);
+    setStatus('PDF failed — try window.print() instead', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🖨️ &nbsp;Print / PDF';
+  }
 }
 
 function setStatus(msg, kind) {
