@@ -2245,13 +2245,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 
 const GITHUB_CONFIG = {
-  // 🔧 แก้ URL ตรงนี้ให้ตรงกับ repo คุณ
-  baselineUrl: 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/Baseline.xer',
-  progressUrl:  'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/Updated.xer',
-
-  // ตั้งเป็น true เพื่อเปิดใช้งาน auto-load
-  // เมื่อแก้ URLs ถูกต้องแล้วให้เปลี่ยนเป็น true
-  enabled: false
+  baselineUrl: 'https://raw.githubusercontent.com/josirichaiaoa-arch/-cfp-dashboard/main/Baseline.xer',
+  progressUrl:  'https://raw.githubusercontent.com/josirichaiaoa-arch/-cfp-dashboard/main/Updated.xer',
+  enabled: true
 };
 
 async function fetchXerFromUrl(url, label) {
