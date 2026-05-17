@@ -475,8 +475,11 @@ tr:last-child td{border-bottom:none}
     <div class="exec-report-title" id="exec-title">EIT2 EXECUTIVE SUMMARY — SCHEDULE PERFORMANCE</div>
     <div class="exec-report-date" id="exec-date">Report Date: —</div>
 
-    <!-- KPI Strip -->
-    <div class="exec-kpi-row" id="exec-kpis"></div>
+    <!-- Narrative -->
+    <div class="card" style="padding:20px 24px;margin-bottom:16px" id="exec-narrative-card">
+      <div class="card-title" style="font-size:13px;margin-bottom:14px">📝 Schedule Status Narrative</div>
+      <div id="exec-narrative" style="font-size:12.5px;line-height:1.75;color:var(--text)"></div>
+    </div>
 
     <!-- Main 2-col -->
     <div class="exec-2col">
@@ -2140,25 +2143,92 @@ function renderExecSummary() {
     (m.project_full_name || m.project_name || 'Project') + ' — EXECUTIVE SUMMARY';
   document.getElementById('exec-date').textContent = 'Report Date: ' + (m.data_date || '—');
 
-  // KPI cards
+  // ---- Narrative ----
   const variance = k.progress_variance_pct || 0;
-  const spi = k.spi || 0;
-  const slip = m.completion_slippage_days || 0;
-  const kpis = [
-    { label: 'Activities',    value: (k.total_activities||0).toLocaleString(), sub: `${k.complete||0} done · ${k.in_progress||0} active`, cls: '' },
-    { label: 'Done',          value: (k.complete||0).toLocaleString(),         sub: `${k.pct_complete_count||0}% of total`,               cls: 'pos' },
-    { label: 'In Progress',   value: (k.in_progress||0).toLocaleString(),      sub: 'activities active',                                   cls: '' },
-    { label: 'Planned %',     value: (k.overall_planned_pct||0).toFixed(1)+'%', sub: 'weighted progress',                                 cls: '' },
-    { label: 'Actual %',      value: (k.overall_actual_pct||0).toFixed(1)+'%', sub: 'at data date',                                       cls: variance >= 0 ? 'pos' : 'neg' },
-    { label: 'Variance',      value: (variance >= 0 ? '+' : '') + variance.toFixed(2)+'%', sub: 'vs plan',                                cls: variance >= 0 ? 'pos' : 'neg' },
-    { label: 'SPI',           value: spi.toFixed(2),                           sub: spi >= 1 ? 'on / ahead' : 'behind schedule',          cls: spi >= 1 ? 'pos' : spi >= 0.9 ? 'warn' : 'neg' },
-  ];
-  document.getElementById('exec-kpis').innerHTML = kpis.map(kp => `
-    <div class="exec-kpi ${kp.cls}">
-      <div class="ek-label">${kp.label}</div>
-      <div class="ek-value">${kp.value}</div>
-      <div class="ek-sub">${kp.sub}</div>
-    </div>`).join('');
+  const spi      = k.spi || 0;
+  const slip     = m.completion_slippage_days || 0;
+
+  // Find most slipped WBS (top 3)
+  const wbsList  = (DATA.wbs_summary || []).slice(0, 15);
+  const critical = wbsList.filter(w => w.slipped_count > 0)
+    .sort((a,b) => b.slipped_count - a.slipped_count).slice(0, 3);
+
+  // Find not-started WBS
+  const notStarted = wbsList.filter(w => w.complete === 0 && w.in_progress === 0 && w.total > 5);
+
+  // SPI label
+  const spiLabel = spi >= 1.05 ? 'ahead of schedule'
+                 : spi >= 0.95 ? 'on schedule'
+                 : spi >= 0.80 ? 'slightly behind schedule'
+                 : 'significantly behind schedule';
+  const spiColor = spi >= 1 ? 'var(--accent-pos)' : spi >= 0.9 ? 'var(--accent-warn)' : 'var(--accent-crit)';
+  const varColor = variance >= 0 ? 'var(--accent-pos)' : 'var(--accent-crit)';
+  const slipColor = slip > 0 ? 'var(--accent-crit)' : 'var(--accent-pos)';
+
+  function bold(val, color) {
+    return `<strong style="color:${color||'var(--primary)'}">${val}</strong>`;
+  }
+
+  const criticalRows = critical.map(w =>
+    `<tr>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-weight:600">${w.wbs}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace">${w.total}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--accent-pos)">${w.complete}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--accent-warn)">${w.in_progress}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace">${w.avg_pct_complete.toFixed(1)}%</td>
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--accent-crit);font-weight:700">${w.slipped_count}</td>
+    </tr>`).join('');
+
+  const narrative = `
+    <p style="margin-bottom:12px">
+      As of ${bold(m.data_date)}, overall project progress stands at
+      ${bold((k.overall_actual_pct||0).toFixed(2)+'%', varColor)} actual against
+      ${bold((k.overall_planned_pct||0).toFixed(2)+'%')} planned
+      (variance: ${bold((variance>=0?'+':'')+variance.toFixed(2)+'%', varColor)}).
+      The project is currently ${bold(spiLabel, spiColor)} with an SPI of ${bold(spi.toFixed(2), spiColor)}.
+      Out of ${bold(k.total_activities.toLocaleString())} total activities,
+      ${bold(k.complete)} are complete, ${bold(k.in_progress)} are in progress,
+      and ${bold(k.not_started)} have not yet started.
+    </p>
+    <p style="margin-bottom:12px">
+      The forecast project completion date is ${bold(m.forecast_finish||'—', slipColor)},
+      compared to the baseline finish of ${bold(m.baseline_finish||'—')}.
+      ${slip > 0
+        ? `This represents a schedule slippage of ${bold('+'+slip+' days', 'var(--accent-crit)')}, requiring immediate corrective action to recover the programme.`
+        : slip < 0
+          ? `The project is currently ${bold(Math.abs(slip)+' days ahead', 'var(--accent-pos)')} of the baseline schedule.`
+          : `The project is currently tracking on baseline finish date.`}
+    </p>
+    ${critical.length > 0 ? `
+    <p style="margin-bottom:8px;font-weight:700;color:var(--primary)">⚠️ Work Packages with Schedule Slippage</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:14px">
+      <thead>
+        <tr style="background:var(--surface-2)">
+          <th style="padding:5px 10px;text-align:left;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">WBS / Discipline</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">Total</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">Done</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">In Prog</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">Actual %</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)">Slipped Acts</th>
+        </tr>
+      </thead>
+      <tbody>${criticalRows}</tbody>
+    </table>` : ''}
+    ${notStarted.length > 0 ? `
+    <p style="margin-bottom:6px;font-weight:700;color:var(--primary)">🔴 Work Packages Not Yet Started</p>
+    <p style="margin-bottom:12px;color:var(--text-2)">
+      The following work packages (${bold(notStarted.length)}) with 5+ activities have recorded ${bold('0% actual progress', 'var(--accent-crit)')}
+      and require immediate attention:
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-crit)">
+        ${notStarted.map(w=>w.wbs).join(' · ')}
+      </span>
+    </p>` : ''}
+    <p style="margin-bottom:0;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+      Source: Primavera P6 Level 4 Schedule — Data Date: ${m.data_date||'—'} &nbsp;|&nbsp;
+      Baseline: ${m.baseline_name||'—'} &nbsp;|&nbsp; Prepared by: Project Controls
+    </p>`;
+
+  document.getElementById('exec-narrative').innerHTML = narrative;
 
   // Key dates table
   const slipCls = slip > 0 ? 'danger' : slip < 0 ? 'pos' : '';
