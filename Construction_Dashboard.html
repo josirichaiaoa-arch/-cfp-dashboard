@@ -108,6 +108,23 @@ a{color:var(--accent-info);text-decoration:none}
 .btn:disabled{opacity:0.5;cursor:not-allowed}
 .btn-secondary{background:transparent;color:var(--primary)}
 .btn-secondary:hover:not(:disabled){background:var(--primary-faint)}
+.btn-pdf{background:#fff;color:#3C2051;border:1.5px solid #3C2051;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.btn-pdf:hover{background:#3C2051;color:#fff!important;border-color:#3C2051}
+
+/* === PRINT / PDF STYLES === */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .toolbar,.tabs,button,.btn,.btn-pdf,
+  .upload-slot,#btn-apply,#btn-reset{display:none!important}
+  .header{padding:20px 24px!important;break-inside:avoid}
+  .kpi-strip{padding:12px 24px!important;break-inside:avoid}
+  .main-content{padding:16px 24px!important}
+  .section{break-inside:avoid;margin-bottom:20px!important;page-break-inside:avoid}
+  .chart-box{break-inside:avoid;page-break-inside:avoid}
+  body{background:#fff!important}
+  .surface,.card{box-shadow:none!important;border:1px solid #ddd!important}
+  @page{size:A4 landscape;margin:15mm 12mm}
+}
 
 select.tool-select{
   padding:7px 30px 7px 12px;font-size:12px;color:var(--text);
@@ -357,6 +374,10 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-secondary" id="btn-reset">Reset to Default</button>
     </div>
     <div id="status-bar">Default project loaded · EIT 2 Thai Oil CFP Project · 2,557 activities</div>
+    <div class="divider-v"></div>
+    <button class="btn btn-pdf" onclick="printDashboard()" title="Export dashboard as PDF">
+      🖨️ &nbsp;Print / PDF
+    </button>
   </div>
 </div>
 
@@ -2010,6 +2031,10 @@ function showLoading(text) {
 function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('active');
 }
+function printDashboard() {
+  window.print();
+}
+
 function setStatus(msg, kind) {
   const el = document.getElementById('status-bar');
   el.textContent = msg;
