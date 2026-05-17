@@ -212,6 +212,48 @@ select.tool-select{
 
 /* === MAIN === */
 main{padding:32px 40px 80px;max-width:1640px;margin:0 auto}
+
+/* === EXEC SUMMARY === */
+.exec-report-title{
+  font-family:'Fraunces',serif;font-size:18px;font-weight:600;
+  color:var(--primary);letter-spacing:0.01em;margin-bottom:4px
+}
+.exec-report-date{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:20px}
+.exec-kpi-row{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:20px}
+.exec-kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;text-align:center;box-shadow:var(--shadow-sm)
+}
+.exec-kpi .ek-label{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}
+.exec-kpi .ek-value{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:var(--primary);line-height:1}
+.exec-kpi .ek-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.exec-kpi.pos .ek-value{color:var(--accent-pos)}
+.exec-kpi.neg .ek-value{color:var(--accent-crit)}
+.exec-kpi.warn .ek-value{color:var(--accent-warn)}
+.exec-2col{display:grid;grid-template-columns:58% 42%;gap:16px;margin-bottom:16px}
+.exec-dates-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+.exec-dates-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.exec-dates-table td:first-child{color:var(--muted);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;width:140px}
+.exec-dates-table td:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text)}
+.exec-dates-table tr.danger td:last-child{color:var(--accent-crit)}
+.exec-dates-table tr.warn td:last-child{color:var(--accent-warn)}
+.exec-wbs-table{width:100%;border-collapse:collapse;font-size:11px}
+.exec-wbs-table th{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:6px 10px;border-bottom:2px solid var(--border);text-align:left}
+.exec-wbs-table th.t-num{text-align:right}
+.exec-wbs-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.exec-wbs-table td.t-num{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px}
+.exec-wbs-table tr:last-child td{border-bottom:none}
+.exec-wbs-table .wbs-name{font-weight:600;color:var(--text);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exec-prog-bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-top:3px;min-width:80px}
+.exec-prog-fill{height:100%;border-radius:3px;background:var(--primary)}
+.exec-prog-fill.low{background:var(--accent-crit)}
+.exec-prog-fill.mid{background:var(--accent-warn)}
+.exec-prog-fill.ok{background:var(--accent-pos)}
+.exec-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.dot-green{background:var(--accent-pos)}
+.dot-amber{background:var(--accent-warn)}
+.dot-red{background:var(--accent-crit)}
+.dot-grey{background:var(--muted-2)}
 .tab-content{display:none}
 .tab-content.active{display:block;animation:fadeIn .25s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -418,7 +460,8 @@ tr:last-child td{border-bottom:none}
 
 <nav class="tabs">
   <div class="tabs-inner" id="tabs">
-    <div class="tab active" data-tab="scurve">📈 S-Curves</div>
+    <div class="tab active" data-tab="exec">📋 Executive Summary</div>
+    <div class="tab" data-tab="scurve">📈 S-Curves</div>
     <div class="tab" data-tab="manpower">👷 Manpower Histogram</div>
     <div class="tab" data-tab="cost">💰 Cost / Earned Value</div>
     <div class="tab" data-tab="pva">📊 Planned vs Actual</div>
@@ -427,8 +470,58 @@ tr:last-child td{border-bottom:none}
 </nav>
 
 <main>
+  <!-- ==== EXECUTIVE SUMMARY ==== -->
+  <section class="tab-content active" id="tab-exec">
+    <div class="exec-report-title" id="exec-title">EIT2 EXECUTIVE SUMMARY — SCHEDULE PERFORMANCE</div>
+    <div class="exec-report-date" id="exec-date">Report Date: —</div>
+
+    <!-- KPI Strip -->
+    <div class="exec-kpi-row" id="exec-kpis"></div>
+
+    <!-- Main 2-col -->
+    <div class="exec-2col">
+      <!-- Left: Mini S-Curve -->
+      <div class="card" style="padding:18px 16px">
+        <div class="card-title" style="font-size:13px">Cumulative Progress S-Curve</div>
+        <div class="card-sub" style="font-size:11px">Planned (Baseline) vs Actual vs Forecast</div>
+        <div id="chart-exec-scurve" style="height:260px"></div>
+      </div>
+      <!-- Right: Dates + Donut -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card" style="padding:16px">
+          <div class="card-title" style="font-size:13px;margin-bottom:12px">Key Project Dates</div>
+          <table class="exec-dates-table" id="exec-dates"></table>
+        </div>
+        <div class="card" style="padding:16px;flex:1">
+          <div class="card-title" style="font-size:13px">Activity Status</div>
+          <div id="chart-exec-donut" style="height:160px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WBS Progress Table -->
+    <div class="card" style="padding:18px 20px">
+      <div class="card-title" style="font-size:13px;margin-bottom:12px">WBS Progress Summary</div>
+      <table class="exec-wbs-table">
+        <thead>
+          <tr>
+            <th style="width:260px">WBS / Discipline</th>
+            <th class="t-num">Total</th>
+            <th class="t-num">Done</th>
+            <th class="t-num">In Prog</th>
+            <th class="t-num">Not Started</th>
+            <th style="width:180px">Progress</th>
+            <th class="t-num">Slipped</th>
+            <th class="t-num">Status</th>
+          </tr>
+        </thead>
+        <tbody id="exec-wbs-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ==== S-CURVES ==== -->
-  <section class="tab-content active" id="tab-scurve">
+  <section class="tab-content" id="tab-scurve">
     <h2 class="section-title">Project S-Curves <span class="mono" style="font-size:13px;color:var(--muted);font-weight:400;">cumulative weighted progress</span></h2>
     <p class="section-sub">Cumulative progress comparing baseline plan, recorded actuals, and forecast trajectory through to completion.</p>
     <div class="card">
@@ -2037,10 +2130,129 @@ function renderLookahead() {
   }
 }
 
+function renderExecSummary() {
+  const k = DATA.kpis;
+  const m = DATA.meta;
+  if (!k || !m) return;
+
+  // Title & date
+  document.getElementById('exec-title').textContent =
+    (m.project_full_name || m.project_name || 'Project') + ' — EXECUTIVE SUMMARY';
+  document.getElementById('exec-date').textContent = 'Report Date: ' + (m.data_date || '—');
+
+  // KPI cards
+  const variance = k.progress_variance_pct || 0;
+  const spi = k.spi || 0;
+  const slip = m.completion_slippage_days || 0;
+  const kpis = [
+    { label: 'Activities',    value: (k.total_activities||0).toLocaleString(), sub: `${k.complete||0} done · ${k.in_progress||0} active`, cls: '' },
+    { label: 'Done',          value: (k.complete||0).toLocaleString(),         sub: `${k.pct_complete_count||0}% of total`,               cls: 'pos' },
+    { label: 'In Progress',   value: (k.in_progress||0).toLocaleString(),      sub: 'activities active',                                   cls: '' },
+    { label: 'Planned %',     value: (k.overall_planned_pct||0).toFixed(1)+'%', sub: 'weighted progress',                                 cls: '' },
+    { label: 'Actual %',      value: (k.overall_actual_pct||0).toFixed(1)+'%', sub: 'at data date',                                       cls: variance >= 0 ? 'pos' : 'neg' },
+    { label: 'Variance',      value: (variance >= 0 ? '+' : '') + variance.toFixed(2)+'%', sub: 'vs plan',                                cls: variance >= 0 ? 'pos' : 'neg' },
+    { label: 'SPI',           value: spi.toFixed(2),                           sub: spi >= 1 ? 'on / ahead' : 'behind schedule',          cls: spi >= 1 ? 'pos' : spi >= 0.9 ? 'warn' : 'neg' },
+  ];
+  document.getElementById('exec-kpis').innerHTML = kpis.map(kp => `
+    <div class="exec-kpi ${kp.cls}">
+      <div class="ek-label">${kp.label}</div>
+      <div class="ek-value">${kp.value}</div>
+      <div class="ek-sub">${kp.sub}</div>
+    </div>`).join('');
+
+  // Key dates table
+  const slipCls = slip > 0 ? 'danger' : slip < 0 ? 'pos' : '';
+  document.getElementById('exec-dates').innerHTML = [
+    { label: 'Plan Start',        value: m.plan_start || '—',         cls: '' },
+    { label: 'Data Date',         value: m.data_date || '—',          cls: '' },
+    { label: 'Baseline Finish',   value: m.baseline_finish || '—',    cls: '' },
+    { label: 'Forecast Finish',   value: m.forecast_finish || '—',    cls: slip > 0 ? 'warn' : '' },
+    { label: 'Slippage',          value: (slip > 0 ? '+' : '') + slip + ' days', cls: slip > 0 ? 'danger' : 'pos' },
+  ].map(r => `<tr class="${r.cls}"><td>${r.label}</td><td>${r.value}</td></tr>`).join('');
+
+  // Activity donut
+  const done   = k.complete    || 0;
+  const inProg = k.in_progress || 0;
+  const notSt  = k.not_started || 0;
+  Plotly.react('chart-exec-donut', [{
+    type: 'pie',
+    values: [done, inProg, notSt],
+    labels: ['Complete', 'In Progress', 'Not Started'],
+    hole: 0.55,
+    marker: { colors: ['#2D7D5A', '#C28526', '#C8B8CD'] },
+    textinfo: 'percent',
+    textfont: { size: 10, family: "'JetBrains Mono',monospace" },
+    hovertemplate: '%{label}: %{value} (%{percent})<extra></extra>'
+  }], {
+    margin: { t: 4, b: 4, l: 4, r: 4 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    showlegend: true,
+    legend: { orientation: 'h', y: -0.12, font: { size: 10 } },
+    annotations: [{ x: 0.5, y: 0.5, text: `<b>${(k.pct_complete_count||0).toFixed(1)}%</b>`, showarrow: false,
+      font: { size: 15, color: '#3C2051', family: "'JetBrains Mono',monospace" }, xanchor: 'center', yanchor: 'middle' }]
+  }, { displayModeBar: false, responsive: true });
+
+  // Mini S-Curve
+  const curves = DATA.curves;
+  const xAll   = curves.map(d => d.week);
+  const ddStr  = m.data_date;
+  Plotly.react('chart-exec-scurve', [
+    { x: xAll, y: curves.map(d => d.planned_pct),
+      name: 'Planned (Baseline)', mode: 'lines',
+      line: { color: '#7A4F94', width: 1.5, dash: 'dot' } },
+    { x: xAll.filter((_,i) => curves[i].actual_pct != null),
+      y: curves.filter(d => d.actual_pct != null).map(d => d.actual_pct),
+      name: 'Actual', mode: 'lines',
+      line: { color: '#2D7D5A', width: 2 } },
+    { x: xAll.filter((_,i) => curves[i].forecast_pct != null),
+      y: curves.filter(d => d.forecast_pct != null).map(d => d.forecast_pct),
+      name: 'Forecast', mode: 'lines',
+      line: { color: '#C28526', width: 1.5, dash: 'dash' } },
+  ], {
+    margin: { t: 8, b: 32, l: 40, r: 8 },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    xaxis: { type: 'date', tickfont: { size: 10 }, gridcolor: '#F0E9F2', showgrid: true },
+    yaxis: { ticksuffix: '%', tickfont: { size: 10 }, gridcolor: '#F0E9F2', showgrid: true, range: [0, 105] },
+    legend: { orientation: 'h', y: -0.18, font: { size: 10 } },
+    shapes: ddStr ? [{ type:'line', x0:ddStr, x1:ddStr, y0:0, y1:1, yref:'paper',
+      line:{color:'#B83A3A', width:1.5, dash:'dash'} }] : [],
+    annotations: ddStr ? [{ x:ddStr, y:1.04, yref:'paper', text:'DATA DATE', showarrow:false,
+      font:{size:9, color:'#B83A3A'}, xanchor:'center' }] : [],
+  }, { displayModeBar: false, responsive: true });
+
+  // WBS Summary table
+  const wbs = DATA.wbs_summary || [];
+  document.getElementById('exec-wbs-tbody').innerHTML = wbs.slice(0, 20).map(w => {
+    const pct = w.avg_pct_complete || 0;
+    const fillCls = pct >= 80 ? 'ok' : pct >= 40 ? 'mid' : 'low';
+    const statusDot = pct >= 100 ? 'green' : w.in_progress > 0 ? 'amber' : 'grey';
+    const slippedPct = w.total > 0 ? Math.round(w.slipped_count / w.total * 100) : 0;
+    const slipCls = slippedPct > 20 ? 'style="color:var(--accent-crit);font-weight:700"' :
+                    slippedPct > 5  ? 'style="color:var(--accent-warn)"' : '';
+    return `<tr>
+      <td class="wbs-name" title="${w.wbs}">${w.wbs}</td>
+      <td class="t-num">${w.total}</td>
+      <td class="t-num" style="color:var(--accent-pos)">${w.complete}</td>
+      <td class="t-num" style="color:var(--accent-warn)">${w.in_progress}</td>
+      <td class="t-num" style="color:var(--muted)">${w.not_started}</td>
+      <td>
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;margin-bottom:2px">${pct.toFixed(1)}%</div>
+        <div class="exec-prog-bar"><div class="exec-prog-fill ${fillCls}" style="width:${Math.min(pct,100)}%"></div></div>
+      </td>
+      <td class="t-num" ${slipCls}>${w.slipped_count}</td>
+      <td style="text-align:center">
+        <span class="exec-status-dot dot-${statusDot}"></span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
 function renderAll() {
   renderHeader();
-  populateScurveFilters();      // rebuild WBS + cutoff dropdowns from current DATA
-  populateLookaheadFilters();   // rebuild look-ahead WBS dropdown from current DATA
+  populateScurveFilters();
+  populateLookaheadFilters();
+  renderExecSummary();
   renderScurve();
   renderManpower();
   renderCost();
