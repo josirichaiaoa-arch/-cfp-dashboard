@@ -2095,15 +2095,9 @@ async function printDashboard() {
     const pdfW = pdf.internal.pageSize.getWidth();   // 420 mm
     const pdfH = pdf.internal.pageSize.getHeight();  // 297 mm
 
-    // Fit entire canvas onto one A3 page
-    const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
-    const imgW  = canvas.width  * ratio;
-    const imgH  = canvas.height * ratio;
-    const offX  = (pdfW - imgW) / 2;
-    const offY  = (pdfH - imgH) / 2;
-
+    // Stretch to fill full A3 page — no white margins
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    pdf.addImage(imgData, 'JPEG', offX, offY, imgW, imgH);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
     pdf.save('Construction_Dashboard.pdf');
 
     setStatus('✅ PDF saved!', 'success');
