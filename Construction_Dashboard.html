@@ -2061,44 +2061,57 @@ function hideLoading() {
 async function printDashboard() {
   const btn = document.getElementById('btn-pdf');
   btn.disabled = true;
-  btn.textContent = '⏳ Generating…';
+  btn.innerHTML = '⏳ Generating…';
   setStatus('Capturing dashboard…', 'info');
 
+  // Temporarily hide the button so it won't appear in PDF
+  btn.style.visibility = 'hidden';
+
+  // Scroll to top before capture
+  window.scrollTo(0, 0);
+
   try {
-    // Capture the full visible page
+    // Capture only the visible viewport — exactly what user sees on screen
+    const vw = window.innerWidth;
+    const vh = document.documentElement.scrollHeight; // full page height but single layout
+
     const canvas = await html2canvas(document.body, {
-      scale: 1.5,
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       scrollX: 0,
       scrollY: 0,
-      windowWidth:  document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight,
-      ignoreElements: el => el.id === 'btn-pdf' || el.id === 'loading-overlay'
+      x: 0,
+      y: 0,
+      width:  vw,
+      height: vh,
+      windowWidth:  vw,
+      windowHeight: vh,
     });
 
     // A3 landscape: 420 × 297 mm
     const { jsPDF } = window.jspdf;
-    const pdf   = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
-    const pdfW  = pdf.internal.pageSize.getWidth();   // 420 mm
-    const pdfH  = pdf.internal.pageSize.getHeight();  // 297 mm
+    const pdf  = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+    const pdfW = pdf.internal.pageSize.getWidth();   // 420 mm
+    const pdfH = pdf.internal.pageSize.getHeight();  // 297 mm
 
-    // Scale image to fit A3 keeping aspect ratio
-    const ratio  = Math.min(pdfW / canvas.width, pdfH / canvas.height);
-    const imgW   = canvas.width  * ratio;
-    const imgH   = canvas.height * ratio;
-    const offX   = (pdfW - imgW) / 2;
-    const offY   = (pdfH - imgH) / 2;
+    // Fit entire canvas onto one A3 page
+    const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
+    const imgW  = canvas.width  * ratio;
+    const imgH  = canvas.height * ratio;
+    const offX  = (pdfW - imgW) / 2;
+    const offY  = (pdfH - imgH) / 2;
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.93);
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     pdf.addImage(imgData, 'JPEG', offX, offY, imgW, imgH);
     pdf.save('Construction_Dashboard.pdf');
 
     setStatus('✅ PDF saved!', 'success');
   } catch(e) {
     console.error(e);
-    setStatus('PDF failed — try window.print() instead', 'error');
+    setStatus('❌ PDF failed: ' + e.message, 'error');
   } finally {
+    btn.style.visibility = 'visible';
     btn.disabled = false;
     btn.innerHTML = '🖨️ &nbsp;Print / PDF';
   }
