@@ -113,17 +113,42 @@ a{color:var(--accent-info);text-decoration:none}
 
 /* === PRINT / PDF STYLES === */
 @media print{
+  @page{size:A3 landscape;margin:4mm 6mm}
+
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  .toolbar,.tabs,button,.btn,.btn-pdf,
-  .upload-slot,#btn-apply,#btn-reset{display:none!important}
-  .header{padding:20px 24px!important;break-inside:avoid}
-  .kpi-strip{padding:12px 24px!important;break-inside:avoid}
-  .main-content{padding:16px 24px!important}
-  .section{break-inside:avoid;margin-bottom:20px!important;page-break-inside:avoid}
-  .chart-box{break-inside:avoid;page-break-inside:avoid}
-  body{background:#fff!important}
-  .surface,.card{box-shadow:none!important;border:1px solid #ddd!important}
-  @page{size:A4 landscape;margin:15mm 12mm}
+
+  /* Only hide the print button itself */
+  .btn-pdf{display:none!important}
+  #loading-overlay{display:none!important}
+
+  /* Show only the active tab content */
+  .tab-content{display:none!important}
+  .tab-content.active{display:block!important}
+
+  /* Scale entire page to fit A3 landscape — tune this number if needed */
+  html{
+    zoom:0.72;
+    background:#fff!important;
+  }
+  body{
+    width:1560px!important;
+    max-width:1560px!important;
+    overflow:hidden!important;
+    background:#fff!important;
+  }
+
+  /* Prevent ALL page breaks */
+  *{
+    page-break-inside:avoid!important;
+    break-inside:avoid!important;
+    page-break-before:avoid!important;
+    page-break-after:avoid!important;
+  }
+
+  /* Remove noise */
+  *{box-shadow:none!important}
+  .header{border-bottom:1px solid #ccc!important}
+  .kpi-strip{border-bottom:1px solid #eee!important}
 }
 
 select.tool-select{
