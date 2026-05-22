@@ -2592,8 +2592,8 @@ async function autoFetchLatestXer() {
     renderAll();
     setStatus('✓ Latest data loaded · ' + DATA.kpis.total_activities.toLocaleString() + ' activities · data date ' + DATA.meta.data_date, 'success');
   } catch (err) {
-    console.warn('Auto-fetch failed, using embedded data:', err);
-    setStatus('Using embedded default data — ' + DATA.kpis.total_activities.toLocaleString() + ' activities', '');
+    console.error('Auto-fetch error:', err);
+    setStatus('⚠ Auto-fetch error: ' + err.message + ' — using embedded data (8/05)', 'error');
   }
 }
 
